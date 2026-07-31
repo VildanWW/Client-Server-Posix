@@ -30,7 +30,7 @@ void UserSession::runWorking() {
 			name = std::string(dataToServer.begin(), dataToServer.end());
 			status = UserStatus::CONNECTED_TO_CHAT;
 			std::cout << "Client sets name: " << name << '\n';
-			return;
+			continue;
 		}
 
 		if (onMessageReceived) {

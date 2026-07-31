@@ -17,5 +17,7 @@ target_link_libraries(server_app PRIVATE Threads::Threads)
 
 add_executable(client_app 
     Client/main.cpp
+    Client/Client.h
+    Client/Client.cpp
 )
 target_link_libraries(client_app PRIVATE Threads::Threads)
