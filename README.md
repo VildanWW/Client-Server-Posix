@@ -4,12 +4,12 @@
 
 ### 1. Компиляция Сервера
 ```bash
-wsl g++ Server/main.cpp Server/Server.cpp Server/UserSession.cpp -o server_app -pthread
+wsl g++ Server/main.cpp Server/Server.cpp Server/UserSession.cpp -o server_app
 ```
 
 ### 2. Компиляция Клиента
 ```bash
-wsl g++ Client/main.cpp -o client_app
+wsl g++ Client/main.cpp Client/Client.cpp -o client_app
 ```
 
 ### 3. Запуск экосистемы
