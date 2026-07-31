@@ -18,12 +18,41 @@ bool Server::startListenning() {
 		}
 
 		std::cout << "New good connect!\n";
+		std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
+		{
+			clientSessions[clientSocketFd] = std::make_unique<UserSession>(clientSocketFd, [this](int fd, const std::vector<char>& data) {
+				this->sendData(fd, data);
+			});
+		}
 
-		clientSessions[clientSocketFd] = std::make_unique<UserSession>();
 		clientSessions[clientSocketFd]->startWorking();
 	}
 
 	return true;
+}
+
+void Server::sendData(int socketFd, const std::vector<char>& data) {
+	if (data.empty()) {
+		std::cerr << "Vector is empty in sendData method\n";
+		return;
+	}
+
+	{
+		std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
+		for (const auto& client : clientSessions) {
+			int clientFd = client.first;
+
+			if (socketFd == clientFd) continue;
+
+			int bytesSent = send(clientFd, data.data(), data.size(), 0);
+
+			if (bytesSent <= 0) {
+				std::cerr << "Bytes send <= 0, client clientFd: " << clientFd << '\n';
+				continue;
+			}
+		}
+	}
+
 }
 
 bool Server::startServer(int port) {
@@ -40,9 +69,7 @@ bool Server::startServer(int port) {
 	return true;
 }
 
-void Server::handleClient() {
 
-}
 
 bool Server::initializeSocketFd() {
 	socketFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -80,10 +107,11 @@ bool Server::stop() {
 	running = false;
 
 	if (socketFd != -1) {
+		shutdown(socketFd, SHUT_RDWR);
 		close(socketFd);
 		socketFd = -1;
 	}
-
+	std::cout << "Method stop of Server worked successfully\n";
 	return true;
 }
 
@@ -92,5 +120,6 @@ Server::~Server() {
 	if (threadForListenning.joinable()) {
 		threadForListenning.join();
 	}
+	std::cout << "Server destructor worked successfully\n";
 }
 

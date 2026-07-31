@@ -3,6 +3,7 @@
 #include <memory>
 #include <thread>
 #include "UserSession.h"
+#include <mutex>
 
 struct ServerConfig {
 	static constexpr int port = 9090;
@@ -16,12 +17,14 @@ private:
 	std::thread threadForListenning;
 	int socketFd = -1;
 	bool running = false;
+	std::mutex serverMutexForSession;
+
+	bool initializeSocketFd();
+	void sendData(int socketFd, const std::vector<char>& data);
+	bool stop();
+	bool startListenning();
 public:
 	bool startServer(int port);
-	bool startListenning();
-	void handleClient();
-	bool initializeSocketFd();
-	bool stop();
 
 	~Server();
 };

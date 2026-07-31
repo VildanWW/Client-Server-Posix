@@ -26,6 +26,13 @@ void UserSession::runWorking() {
 
 		std::vector<char> dataToServer(buffer.begin(), buffer.begin() + bytesRead);
 
+		if (status == UserStatus::WAITING_NAME) {
+			name = std::string(dataToServer.begin(), dataToServer.end());
+			status = UserStatus::CONNECTED_TO_CHAT;
+			std::cout << "Client sets name: " << name << '\n';
+			return;
+		}
+
 		if (onMessageReceived) {
 			onMessageReceived(socketFd, dataToServer);
 		}
@@ -37,9 +44,10 @@ bool UserSession::stop() {
 	running = false;
 
 	if (socketFd != -1) {
+		shutdown(socketFd, SHUT_RDWR);
 		close(socketFd);
 	}
-
+	std::cout << "Method stop of UserSession worked successfully\n";
 	return true;
 }
 
@@ -48,5 +56,6 @@ UserSession::~UserSession() {
 	if (clientThread.joinable()) {
 		clientThread.join();
 	}
+	std::cout << "UserSession destructor worked successfully\n";
 }
 

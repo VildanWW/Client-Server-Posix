@@ -17,13 +17,13 @@ private:
 	std::thread clientThread;
 	bool running = false;
 	UserStatus status = UserStatus::WAITING_NAME;
+
+	void runWorking();
+	bool stop();
 public:
-	UserSession() : name(""), socketFd(-1) {}
 	UserSession(int socketFd, std::function<void(int, const std::vector<char>&)> onMessageReceived) : name(""), socketFd(socketFd), onMessageReceived(onMessageReceived) {}
 
 	bool startWorking();
-	void runWorking();
-	bool stop();
 
 	~UserSession();
 };
