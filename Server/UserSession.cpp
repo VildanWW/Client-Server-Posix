@@ -5,6 +5,10 @@
 #include <unistd.h>
 #include <iostream>
 
+bool UserSession::getRunning() {
+	return running;
+}
+
 bool UserSession::startWorking() {
 	running = true;
 	clientThread = std::thread(&UserSession::runWorking, this);
@@ -18,7 +22,13 @@ void UserSession::runWorking() {
 	while (running) {
 		int bytesRead = recv(socketFd, buffer.data(), bufferSize, 0);
 
-		if (bytesRead <= 0) {
+		if (bytesRead == 0) {
+			std::cout << "Client cleanly disconnected, socket: " << socketFd << '\n';
+			running = false; 
+			break;           
+		}
+
+		if (bytesRead < 0) {
 			std::cerr << "Bytes read <= 0\n";
 			running = false;
 			break;

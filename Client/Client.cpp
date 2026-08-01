@@ -21,6 +21,7 @@ void Client::runReceiving() {
 
 		std::string dataReceived(data.begin(), data.begin() + bytesRead);
 		std::cout << dataReceived << '\n';
+		std::cout << "> " << std::flush;
 	}
 }
 

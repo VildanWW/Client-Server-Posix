@@ -19,6 +19,7 @@ private:
 	bool running = false;
 	std::mutex serverMutexForSession;
 
+	void cleanDeadSessions();
 	bool initializeSocketFd();
 	void sendData(int socketFd, const std::vector<char>& data);
 	bool stop();

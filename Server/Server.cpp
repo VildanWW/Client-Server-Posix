@@ -7,6 +7,8 @@
 
 bool Server::startListenning() {
 	while (running) {
+		cleanDeadSessions();
+
 		sockaddr_in clientAddress;
 		socklen_t sizeAddr = sizeof(clientAddress);
 
@@ -31,6 +33,20 @@ bool Server::startListenning() {
 	return true;
 }
 
+void Server::cleanDeadSessions() {
+	std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
+
+	for (auto it = clientSessions.begin(); it != clientSessions.end();) {
+		if (!it->second->getRunning()) {
+			it = clientSessions.erase(it);
+			std::cout << "Client session deleted from server memory\n";
+		}
+		else {
+			it++;
+		}
+	}
+}
+
 void Server::sendData(int socketFd, const std::vector<char>& data) {
 	if (data.empty()) {
 		std::cerr << "Vector is empty in sendData method\n";
@@ -42,7 +58,8 @@ void Server::sendData(int socketFd, const std::vector<char>& data) {
 		for (const auto& client : clientSessions) {
 			int clientFd = client.first;
 
-			if (socketFd == clientFd) continue;
+			if (socketFd == clientFd || !client.second->getRunning()) continue;
+
 
 			int bytesSent = send(clientFd, data.data(), data.size(), 0);
 
@@ -52,7 +69,6 @@ void Server::sendData(int socketFd, const std::vector<char>& data) {
 			}
 		}
 	}
-
 }
 
 bool Server::startServer(int port) {
@@ -68,8 +84,6 @@ bool Server::startServer(int port) {
 	std::cout << "Server is running!\n";
 	return true;
 }
-
-
 
 bool Server::initializeSocketFd() {
 	socketFd = socket(AF_INET, SOCK_STREAM, 0);
