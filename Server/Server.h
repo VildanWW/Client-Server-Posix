@@ -4,24 +4,24 @@
 #include <thread>
 #include "UserSession.h"
 #include <mutex>
-
-struct ServerConfig {
-	static constexpr int port = 9090;
-	static constexpr int sizeLog = 64;
-	static constexpr int bufferSize = 4096;
-};
+#include <condition_variable>
 
 class Server {
 private:
 	std::unordered_map<int, std::unique_ptr<UserSession>> clientSessions;
+	std::mutex serverMutexForSession;
 	std::thread threadForListenning;
+	std::thread threadForDeadSession;
+	std::mutex serverMutexForTimer;
+	std::condition_variable cvForTimer;
+
 	int socketFd = -1;
 	bool running = false;
-	std::mutex serverMutexForSession;
 
 	void cleanDeadSessions();
+	void sendData(int socketFd, const InAppMessage& messageForServer);
+	void timerCleanDeadSession();
 	bool initializeSocketFd();
-	void sendData(int socketFd, const std::vector<char>& data);
 	bool stop();
 	bool startListenning();
 public:

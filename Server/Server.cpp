@@ -4,11 +4,10 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include "UserSession.h"
+#include "Settings.h"
 
 bool Server::startListenning() {
 	while (running) {
-		cleanDeadSessions();
-
 		sockaddr_in clientAddress;
 		socklen_t sizeAddr = sizeof(clientAddress);
 
@@ -22,8 +21,8 @@ bool Server::startListenning() {
 		std::cout << "New good connect!\n";
 		std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
 		{
-			clientSessions[clientSocketFd] = std::make_unique<UserSession>(clientSocketFd, [this](int fd, const std::vector<char>& data) {
-				this->sendData(fd, data);
+			clientSessions[clientSocketFd] = std::make_unique<UserSession>(clientSocketFd, [this](int fd, const InAppMessage& messageForServer) {
+				this->sendData(fd, messageForServer);
 			});
 		}
 
@@ -31,6 +30,35 @@ bool Server::startListenning() {
 	}
 
 	return true;
+}
+
+void Server::sendData(int socketFd, const InAppMessage& messageForServer) {
+	{
+		std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
+		for (const auto& client : clientSessions) {
+			int clientFd = client.first;
+
+			if (socketFd == clientFd || !client.second->getRunning()) continue;
+
+			PacketData packet;
+			packet.packetType = messageForServer.type;
+			packet.dataSize = messageForServer.dataBuffer.size();
+
+			int bytesSentPacket = send(clientFd, &packet, sizeof(PacketData), 0);
+
+			if (bytesSentPacket != sizeof(PacketData)) {
+				std::cerr << "BytesSentPacket != sizeof(PacketData), client clientFd: " << clientFd << '\n';
+				continue;
+			}
+
+			int bytesSentData = send(clientFd, messageForServer.dataBuffer.data(), messageForServer.dataBuffer.size(), 0);
+			
+			if (bytesSentData != static_cast<int>(messageForServer.dataBuffer.size())) {
+				std::cerr << "bytesSentData != static_cast<int>(messageForServer.dataBuffer.size()), client clientFd: " << clientFd << '\n';
+				continue;
+			}
+		}
+	}
 }
 
 void Server::cleanDeadSessions() {
@@ -47,27 +75,16 @@ void Server::cleanDeadSessions() {
 	}
 }
 
-void Server::sendData(int socketFd, const std::vector<char>& data) {
-	if (data.empty()) {
-		std::cerr << "Vector is empty in sendData method\n";
-		return;
-	}
+void Server::timerCleanDeadSession() {
+	std::unique_lock<std::mutex> lockGuard(serverMutexForTimer);
+	while (running) {
+		cvForTimer.wait_for(lockGuard, std::chrono::seconds(ServerConfig::timeCleanSession), [this]() {
+			return !running;
+		});
 
-	{
-		std::lock_guard<std::mutex> lockGuard(serverMutexForSession);
-		for (const auto& client : clientSessions) {
-			int clientFd = client.first;
+		if (!running) break;
 
-			if (socketFd == clientFd || !client.second->getRunning()) continue;
-
-
-			int bytesSent = send(clientFd, data.data(), data.size(), 0);
-
-			if (bytesSent <= 0) {
-				std::cerr << "Bytes send <= 0, client clientFd: " << clientFd << '\n';
-				continue;
-			}
-		}
+		cleanDeadSessions();
 	}
 }
 
@@ -80,6 +97,7 @@ bool Server::startServer(int port) {
 	running = true;
 
 	threadForListenning = std::thread(&Server::startListenning, this);
+	threadForDeadSession = std::thread(&Server::timerCleanDeadSession, this);
 
 	std::cout << "Server is running!\n";
 	return true;
@@ -110,7 +128,7 @@ bool Server::initializeSocketFd() {
 		close(socketFd);
 		return false;
 	}
-
+	
 	std::cout << "Server is running on port: " << ServerConfig::port << '\n';
 	
 	return true;
@@ -119,6 +137,7 @@ bool Server::initializeSocketFd() {
 bool Server::stop() {
 	if (!running) return false;
 	running = false;
+	cvForTimer.notify_all();
 
 	if (socketFd != -1) {
 		shutdown(socketFd, SHUT_RDWR);
@@ -133,6 +152,9 @@ Server::~Server() {
 	stop();
 	if (threadForListenning.joinable()) {
 		threadForListenning.join();
+	}
+	if (threadForDeadSession.joinable()) {
+		threadForDeadSession.join();
 	}
 	std::cout << "Server destructor worked successfully\n";
 }

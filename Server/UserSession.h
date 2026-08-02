@@ -3,26 +3,24 @@
 #include <thread>
 #include <functional>
 #include <vector>
-
-enum UserStatus {
-	WAITING_NAME,
-	CONNECTED_TO_CHAT
-};
+#include "Settings.h"
 
 class UserSession {
 private:
-	std::string name;
-	int socketFd;
-	std::function<void(int, const std::vector<char>&)> onMessageReceived;
-
+	std::function<void(int, const InAppMessage&)> onMessageReceived;
 	std::thread clientThread;
-	bool running = false;
+	std::string name;
+
 	UserStatus status = UserStatus::WAITING_NAME;
+
+	int socketFd;
+	bool running = false;
+
 	void runWorking();
 	bool stop();
 public:
 	UserSession(int socketFd, 
-		std::function<void(int, const std::vector<char>&)> onMessageReceived) 
+		std::function<void(int, const InAppMessage&)> onMessageReceived)
 		: name(""), socketFd(socketFd), onMessageReceived(onMessageReceived) {}
 
 	bool getRunning();

@@ -13,7 +13,7 @@ int main() {
             std::cin >> command;
             if (command == "stop") {
                 break;
-            }
+            }  
         }
     }
     catch (std::exception& ex) {

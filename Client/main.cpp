@@ -20,7 +20,7 @@ int main() {
 	if (!client.connectToServer(ip, port)) {
 		std::cerr << "Don't to connect!\n";
 		return -1;
-	}
+	} 
 
 	std::vector<char> nameData(name.begin(), name.end());
 	client.sendToData(nameData);
