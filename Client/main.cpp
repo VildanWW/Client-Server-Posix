@@ -7,7 +7,7 @@ int main() {
 	Client client;
 	std::string ip = "127.0.0.1";
 	int port = 9090;
-
+	 
 	std::cout << "Enter your name: ";
 	std::string name;
 	std::getline(std::cin, name);

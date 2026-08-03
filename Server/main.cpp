@@ -14,7 +14,7 @@ int main() {
             if (command == "stop") {
                 break;
             }  
-        }
+        } 
     }
     catch (std::exception& ex) {
         std::cerr << ex.what() << '\n';
