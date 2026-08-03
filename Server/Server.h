@@ -25,7 +25,7 @@ private:
 	bool stop();
 	bool startListenning();
 public:
-	bool startServer(int port);
+	bool startServer();
 
 	~Server();
 };

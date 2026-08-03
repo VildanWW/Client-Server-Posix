@@ -88,7 +88,7 @@ void Server::timerCleanDeadSession() {
 	}
 }
 
-bool Server::startServer(int port) {
+bool Server::startServer() {
 	if (!initializeSocketFd()) {
 		std::cerr << "Server can't to initialize the socketFd\n";
 		return false;
