@@ -1,4 +1,4 @@
-## Сборка и запуск проекта (POSIX / Linux / WSL)
+## Сборка и запуск проекта (POSIX / Linux / WSL, Qt)
 
 Реализация простого чата (Client-Server) уровня Junior без использования сторонних сетевых библиотек, основанная на принципах Posix.
 
@@ -7,19 +7,9 @@
 wsl g++ Server/main.cpp Server/Server.cpp Server/UserSession.cpp -o server_app
 ```
 
-### 2. Компиляция Клиента
-```bash
-wsl g++ Client/main.cpp Client/Client.cpp -o client_app
-```
-
 ### 3. Запуск экосистемы
 
 1. В первом терминале запустите серверную часть:
 ```bash
 ./server_app
-```
-
-2. Во втором терминале запустите клиент:
-```bash
-./client_app
 ```
