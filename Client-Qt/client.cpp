@@ -1,6 +1,7 @@
 #include "client.h"
 #include "Settings.h"
 #include <iostream>
+#include <QSettings>
 
 Client::Client(QObject *parent) : QObject{parent} {
     socket = new QTcpSocket(this);
@@ -10,27 +11,27 @@ Client::Client(QObject *parent) : QObject{parent} {
 }
 
 void Client::onReadyRead() {
-    if(socket->bytesAvailable() < sizeof(PacketData)){
-        return;
+    while (socket->bytesAvailable() >= sizeof(PacketData)) {
+        PacketData packet{};
+        socket->peek(reinterpret_cast<char*>(&packet), sizeof(PacketData));
+
+        int fullPacketSize = sizeof(PacketData) + packet.dataSize;
+
+        if (socket->bytesAvailable() < fullPacketSize) {
+            return;
+        }
+
+        socket->read(reinterpret_cast<char*>(&packet), sizeof(PacketData));
+        QByteArray bufferRecived = socket->read(packet.dataSize);
+
+        packet.senderName[sizeof(packet.senderName) - 1] = '\0';
+        QString authorName = QString::fromUtf8(packet.senderName);
+
+        emit messageReceived(packet.packetType, authorName, bufferRecived);
     }
-
-    PacketData packet;
-    socket->peek(reinterpret_cast<char*>(&packet), sizeof(PacketData));
-
-    int fullPacketSize = sizeof(PacketData) + packet.dataSize;
-
-    if(socket->bytesAvailable() < fullPacketSize) {
-        return;
-    }
-
-    socket->read(reinterpret_cast<char*>(&packet), sizeof(PacketData));
-
-    QByteArray bufferRecived = socket->read(packet.dataSize);
-
-    emit messageReceived(packet.packetType, bufferRecived);
 }
 
-bool Client::connectToServer(const std::string &ip) {
+bool Client::connectToServer(const std::string& ip, const QString& userName) {
     if(!socket) {
         return false;
     }
@@ -39,6 +40,7 @@ bool Client::connectToServer(const std::string &ip) {
 
     if(socket->waitForConnected(ClientConfig::timeWaitingConnected)) {
         std::cout << "Connected successfully\n";
+        clientName = userName;
         return true;
     }
 
@@ -47,17 +49,24 @@ bool Client::connectToServer(const std::string &ip) {
 }
 
 bool Client::sendToData(DataType type, const QByteArray &sendBuffer) {
-    if(!socket || socket->state()!=QAbstractSocket::ConnectedState) {
+    if(!socket || socket->state() != QAbstractSocket::ConnectedState) {
         return false;
     }
 
     PacketData packet;
+    memset(&packet, 0, sizeof(PacketData));
+
     packet.packetType = type;
     packet.dataSize = sendBuffer.size();
 
+    std::string stdName = clientName.toStdString();
+
+    size_t copiedBytes = stdName.copy(packet.senderName, sizeof(packet.senderName) - 1);
+    packet.senderName[copiedBytes] = '\0';
+
     socket->write(reinterpret_cast<char*>(&packet), sizeof(PacketData));
 
-    if(packet.dataSize>0) {
+    if(packet.dataSize > 0) {
         socket->write(sendBuffer);
     }
     return socket->flush();

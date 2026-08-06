@@ -9,18 +9,19 @@ class Client : public QObject {
     Q_OBJECT
 private:
     QTcpSocket* socket = nullptr;
+    QString clientName;
 
     void onReadyRead();
 public:
     explicit Client(QObject *parent = nullptr);
 
-    bool connectToServer(const std::string& ip);
+    bool connectToServer(const std::string& ip, const QString& userName);
     bool sendToData(DataType type, const QByteArray& sendBuffer);
     bool stop();
 
     ~Client();
 signals:
-    void messageReceived(DataType type, const QByteArray& data);
+    void messageReceived(DataType type, const QString &senderName, const QByteArray &data);
     void disconnected();
 };
 

@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include "UserSession.h"
 #include "Settings.h"
+#include <cstring>
 
 bool Server::startListenning() {
 	while (running) {
@@ -41,8 +42,13 @@ void Server::sendData(int socketFd, const InAppMessage& messageForServer) {
 			if (socketFd == clientFd || !client.second->getRunning()) continue;
 
 			PacketData packet;
+			memset(&packet, 0, sizeof(PacketData));
+
 			packet.packetType = messageForServer.type;
 			packet.dataSize = messageForServer.dataBuffer.size();
+
+			size_t copiedBytes = messageForServer.senderName.copy(packet.senderName, sizeof(packet.senderName) - 1);
+			packet.senderName[copiedBytes] = '\0';
 
 			int bytesSentPacket = send(clientFd, &packet, sizeof(PacketData), 0);
 

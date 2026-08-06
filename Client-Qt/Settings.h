@@ -19,6 +19,7 @@ enum class DataType : int32_t {
 struct PacketData {
     DataType packetType;
     int dataSize;
+    char senderName[32];
 };
 
 struct InAppMessage {
@@ -32,6 +33,7 @@ struct ServerConfig {
     static constexpr int sizeLog = 64;
     static constexpr int bufferSize = 4096;
     static constexpr int timeCleanSession = 5;
+    static const inline std::string serverIp = "127.0.0.1";
 };
 
 struct ClientConfig{

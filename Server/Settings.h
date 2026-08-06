@@ -15,6 +15,7 @@ enum class DataType : int32_t {
 struct PacketData {
 	DataType packetType;
 	int dataSize;
+	char senderName[32];
 };
 
 struct InAppMessage {

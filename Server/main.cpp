@@ -6,7 +6,7 @@ int main() {
     
     try {
         Server server;
-        server.startServer(9485);
+        server.startServer();
 
         std::string command;
         while (true) {

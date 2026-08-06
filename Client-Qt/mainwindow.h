@@ -16,12 +16,17 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+private slots:
+    void onMessageReceived(DataType type, const QString &senderName, const QByteArray &data);
+    void onClientDisconnected();
+
+    void onSendButtonClicked();
 private:
     std::unique_ptr<Ui::MainWindow> ui;
 
     Client* client = nullptr;
 
-    //void onMessageReceived(DataType type, const QByteArray& data);
-    //void onClientDisconnected();
+    void appendMessageToChat(const QString& sender, const QString& text, bool isMyMessage);
+    bool setSettingsUser();
 };
 #endif // MAINWINDOW_H
